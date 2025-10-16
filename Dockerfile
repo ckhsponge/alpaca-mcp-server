@@ -45,4 +45,4 @@ EXPOSE 8080 8000
 # Default command runs the server with stdio transport
 # Can be overridden for HTTP transport: docker run -p 8000:8000 image --transport http
 ENTRYPOINT ["alpaca-mcp-server"]
-CMD ["serve"]
+CMD ["serve", "--transport", "http"]
