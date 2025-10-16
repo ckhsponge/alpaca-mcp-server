@@ -40,9 +40,9 @@ HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
     CMD python -c "from alpaca_mcp_server import server; print('Health check passed')" || exit 1
 
 # Expose port for HTTP transport (optional)
-EXPOSE 8080 8000
+EXPOSE 8080
 
 # Default command runs the server with stdio transport
 # Can be overridden for HTTP transport: docker run -p 8000:8000 image --transport http
 ENTRYPOINT ["alpaca-mcp-server"]
-CMD ["serve", "--transport", "http"]
+CMD ["serve", "--transport", "http", "--host", "0.0.0.0", "--port", "8080"]
