@@ -4,7 +4,7 @@
 # Location: /Dockerfile
 # Purpose: Creates containerized deployment of the Alpaca MCP Server for Docker registry
 
-FROM python:3.11-slim
+FROM public.ecr.aws/lambda/python:3.11-slim
 
 # Set working directory
 WORKDIR /app
