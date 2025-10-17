@@ -1,52 +1,40 @@
-# Dockerfile
-#
-# Docker configuration for Alpaca MCP Server
-# Location: /Dockerfile
-# Purpose: Creates containerized deployment of the Alpaca MCP Server for Docker registry
-
-#FROM public.ecr.aws/docker/library/python:3.11-slim
 FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim
 
-# Set working directory
-WORKDIR /app
+RUN pwd
 
-# Install system dependencies for potential native extensions
-RUN apt-get update && apt-get install -y \
-    gcc \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
-
-# Copy project files
-COPY pyproject.toml requirements.txt README.md ./
-COPY src/ ./src/
-COPY .github/core .github/core
+# Install Node.js 20, git and dependencies
+RUN apt-get update && apt-get install -y curl git && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-# Use pip instead of uvx for container environment
-RUN pip install --no-cache-dir --upgrade pip && \
+RUN pip install --break-system-packages requests fastmcp
+
+RUN git clone https://github.com/ckhsponge/supergateway.git /app/supergateway
+RUN cd /app/supergateway && npm install
+RUN cd /app/supergateway && npm run build
+
+COPY . /app/local
+
+RUN pwd
+RUN ls -l
+RUN ls -l /app
+RUN ls -l /app/local
+
+#RUN cd /app/local && python install.py
+RUN cd /app/local && pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir .
 
-# Create non-root user for security
-RUN useradd --create-home --shell /bin/bash alpaca && \
-    chown -R alpaca:alpaca /app
-USER alpaca
+WORKDIR /app/supergateway
 
-# Set environment variables
-ENV PYTHONPATH=/app
-ENV ALPACA_PAPER_TRADE=True
-ENV PYTHONUNBUFFERED=1
-
-# Health check to verify the server can import properly
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-    CMD python -c "from alpaca_mcp_server import server; print('Health check passed')" || exit 1
-
-# Expose port for HTTP transport (optional)
 EXPOSE 8000
 
-# Default command runs the server with stdio transport
-# Can be overridden for HTTP transport: docker run -p 8000:8000 image --transport http
-ENTRYPOINT ["alpaca-mcp-server"]
-CMD ["serve", "--transport", "http", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["node", "/app/supergateway/dist/index.js"]
 
-# docker build --progress=plain -t alpaca .
-# docker run -it --rm -p 8000:8000 -e ALPACA_API_KEY=your_api_key -e ALPACA_SECRET_KEY=your_secret_key alpaca
+CMD ["--stdio", "python /app/local/alpaca_mcp_server.py", "--outputTransport", "streamableHttp", "--healthEndpoint", "/ping", "--port", "8000", "--streamableHttpPath", "/mcp"]
+
+# docker build -t supergateway .
+
+# docker run -it --rm -p 8080:8080 supergateway
+
