@@ -4,7 +4,8 @@
 # Location: /Dockerfile
 # Purpose: Creates containerized deployment of the Alpaca MCP Server for Docker registry
 
-FROM public.ecr.aws/docker/library/python:3.11-slim
+#FROM public.ecr.aws/docker/library/python:3.11-slim
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim
 
 # Set working directory
 WORKDIR /app
@@ -40,9 +41,12 @@ HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
     CMD python -c "from alpaca_mcp_server import server; print('Health check passed')" || exit 1
 
 # Expose port for HTTP transport (optional)
-EXPOSE 8080
+EXPOSE 8000
 
 # Default command runs the server with stdio transport
 # Can be overridden for HTTP transport: docker run -p 8000:8000 image --transport http
 ENTRYPOINT ["alpaca-mcp-server"]
-CMD ["serve", "--transport", "http", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["serve", "--transport", "http", "--host", "0.0.0.0", "--port", "8000"]
+
+# docker build --progress=plain -t alpaca .
+# docker run -it --rm -p 8000:8000 -e ALPACA_API_KEY=your_api_key -e ALPACA_SECRET_KEY=your_secret_key alpaca
